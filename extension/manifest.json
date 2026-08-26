@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "ChatAsset — ChatGPT Question Capture (MVP)",
+  "version": "0.1.0",
+  "description": "Technical spike: detects questions submitted on ChatGPT's web UI and logs them to the console. No network calls, no storage.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
