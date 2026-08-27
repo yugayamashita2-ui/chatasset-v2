@@ -1,8 +1,10 @@
-# ChatAsset server — Phase 2 technical spike
+# ChatAsset server — Phase 2 + 3 technical spike
 
 Goal: confirm the Chrome extension can send a captured question to a server
-and have it saved. No database, no auth, no external npm dependencies —
-just Node's built-in `http` module and a JSON file on disk.
+and have it saved (Phase 2), and that the saved questions can be browsed in
+a simple list (Phase 3). No database, no auth, no external npm dependencies
+— just Node's built-in `http` module, a JSON file on disk, and a static
+HTML page.
 
 ## Run it
 
@@ -22,7 +24,8 @@ You should see:
 [ChatAsset] server listening on http://localhost:8787
 ```
 
-Leave it running while you use the Chrome extension.
+Leave it running while you use the Chrome extension. Then open
+http://localhost:8787/ in a browser to see the question list.
 
 ## What it does
 
@@ -31,8 +34,12 @@ Leave it running while you use the Chrome extension.
   strings; the other two are optional. Appends a record (with a generated
   `id` and `receivedAt`) to `data/questions.json` and returns it.
 - `GET /api/questions` — returns everything saved so far, as a JSON array.
-  Not used by the extension yet; useful for checking what got saved
+  Used by the list page below; also handy directly
   (`curl http://localhost:8787/api/questions`).
+- `GET /` — serves `public/index.html`, a plain HTML/CSS/JS page (no
+  framework, no build step) that fetches `/api/questions` and renders each
+  question newest-first: provider, date/time, the question text, and a
+  link to the original conversation. Click "更新" to refetch.
 
 ## Data
 

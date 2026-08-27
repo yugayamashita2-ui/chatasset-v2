@@ -10,6 +10,7 @@ const crypto = require("crypto");
 
 const PORT = process.env.PORT || 8787;
 const DATA_FILE = path.join(__dirname, "data", "questions.json");
+const INDEX_FILE = path.join(__dirname, "public", "index.html");
 const MAX_BODY_BYTES = 100_000; // a single question should never be this long
 
 function readQuestions() {
@@ -105,6 +106,12 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && req.url === "/api/questions") {
     sendJson(res, 200, readQuestions());
+    return;
+  }
+
+  if (req.method === "GET" && (req.url === "/" || req.url === "/index.html")) {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(fs.readFileSync(INDEX_FILE));
     return;
   }
 
