@@ -1,9 +1,10 @@
-// ChatAsset — Phase 1 technical spike.
+// ChatAsset — Phase 1 + Phase 2 technical spike.
 //
 // Goal: confirm that a Chrome extension can detect the question a user
-// submits on the ChatGPT web UI, with an accurate submission timestamp.
-// This script does nothing but log to the console — no network calls, no
-// storage, no reading of AI answers.
+// submits on the ChatGPT web UI, with an accurate submission timestamp, and
+// send it to a local ChatAsset server. Still no capture of AI answers, and
+// nothing beyond the question text, provider, timestamp, and conversation
+// URL is sent.
 //
 // Detection strategy: capture the prompt text at the moment of submission
 // (Enter key, send button click, or the form's submit event), rather than
@@ -13,6 +14,7 @@
 // action avoids that.
 (function () {
   const PROVIDER = "ChatGPT";
+  const SERVER_URL = "http://localhost:8787/api/questions";
   const PROMPT_SELECTORS = [
     "#prompt-textarea",
     'form [contenteditable="true"]',
@@ -33,6 +35,24 @@
     return "";
   }
 
+  function sendToServer(record) {
+    fetch(SERVER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+        console.log("[ChatAsset] saved to server.");
+      })
+      .catch((err) => {
+        console.warn(
+          "[ChatAsset] could not reach ChatAsset server (is it running on localhost:8787?)",
+          err
+        );
+      });
+  }
+
   function logQuestion() {
     const text = getPromptText();
     if (!text) return;
@@ -46,11 +66,20 @@
     lastLoggedText = text;
     lastLoggedAt = now;
 
+    const record = {
+      provider: PROVIDER,
+      question: text,
+      timestamp: new Date(now).toISOString(),
+      conversationUrl: window.location.href,
+    };
+
     console.log("[ChatAsset]");
-    console.log("Provider:", PROVIDER);
-    console.log("Question:", text);
-    console.log("Timestamp:", new Date(now).toISOString());
-    console.log("Conversation URL:", window.location.href);
+    console.log("Provider:", record.provider);
+    console.log("Question:", record.question);
+    console.log("Timestamp:", record.timestamp);
+    console.log("Conversation URL:", record.conversationUrl);
+
+    sendToServer(record);
   }
 
   function isSendButton(target) {
