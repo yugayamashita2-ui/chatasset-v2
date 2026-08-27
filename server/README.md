@@ -2,8 +2,11 @@
 
 Goal: confirm the Chrome extension can send a captured question to a server
 and have it saved (Phase 2), that the saved questions can be browsed and
-searched in a simple list (Phase 3 + 4), and that a long question can be
-summarized on demand via the Claude API (Phase 5). No database, no auth.
+searched in a simple list (Phase 3 + 4), that a long question can be
+summarized on demand via the Claude API (Phase 5), and that questions asked
+*before* you started using ChatAsset can be backfilled from ChatGPT's own
+data export (see "Importing past ChatGPT history" below). No database, no
+auth.
 
 ## Setup (one-time)
 
@@ -107,6 +110,40 @@ on the next successful `POST`.
 `.env` (your API key) still lives inside this `server/` folder, so it does
 need to be recreated after downloading a fresh copy — seeded from
 `.env.example`, this only takes a moment (see above).
+
+## Importing past ChatGPT history
+
+The Chrome extension only sees the conversation you have open right now —
+it can't retroactively capture questions you asked before installing it.
+For that, ChatGPT has its own official export feature, which is more
+reliable than trying to scrape old conversations out of the page (no real
+timestamps to scrape, and the DOM structure isn't a stable target).
+
+1. In ChatGPT: Settings → Data controls → Export data → confirm. Within a
+   few minutes you'll get an email from OpenAI with a download link (the
+   link expires after a while, so download it soon).
+2. Download and unzip it. Find **`conversations.json`** inside — that's
+   the one this script reads.
+3. Make sure the ChatAsset server is running (`node server.js`, in its own
+   terminal window/tab).
+4. In another terminal, in this `server/` folder, run:
+   ```
+   node import-chatgpt-export.js /path/to/conversations.json
+   ```
+   (Drag the `conversations.json` file into the terminal after typing the
+   command and a space, same as with other file paths in this project, to
+   fill in the path without typing it by hand.)
+
+It prints how many of your own messages it found and imported. It only
+ever reads messages where the author role is "user" — it never looks at
+the AI's answers, even though the export file contains them. It's safe to
+run again on the same file (e.g. after exporting again later): it checks
+what's already saved first and skips exact duplicates.
+
+The export file itself is a complete copy of your ChatGPT history,
+including the AI's answers — unlike anything ChatAsset stores, so once
+you've imported what you want, it's worth deleting that download if you
+don't need it lying around.
 
 ## Known caveats
 
