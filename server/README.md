@@ -67,7 +67,7 @@ http://localhost:8787/ in a browser to see the question list.
 - `POST /api/questions` — body: `{ provider, question, timestamp,
   conversationUrl }`. Requires `provider` and `question` to be non-empty
   strings; the other two are optional. Appends a record (with a generated
-  `id`, `questionSummary: null`, and `receivedAt`) to `data/questions.json`
+  `id`, `questionSummary: null`, and `receivedAt`) to `~/.chatasset/questions.json`
   and returns it.
 - `GET /api/questions` — returns everything saved so far, as a JSON array.
   Used by the list page below; also handy directly
@@ -90,10 +90,23 @@ http://localhost:8787/ in a browser to see the question list.
 
 ## Data
 
-`data/questions.json` holds every captured question — this is real personal
-data (what you asked an AI, when, and a link to the conversation). It's
-listed in `.gitignore` so it's never committed. Delete the file any time to
-reset; the server recreates it on the next successful `POST`.
+Every captured question is stored at **`~/.chatasset/questions.json`** — in
+your home folder, *not* inside this project folder. This is deliberate:
+this whole `server/` folder gets replaced every time you download a new
+ZIP to pick up an update, but `~/.chatasset` doesn't, so your question
+history survives updates instead of silently starting over each time.
+
+(To find it in Finder: `Cmd+Shift+G`, type `~/.chatasset`, press Enter —
+it's a hidden folder since its name starts with a dot.)
+
+This is real personal data (what you asked an AI, when, and a link to the
+conversation) — it lives only on your machine and is never part of this
+git repository. Delete the file any time to reset; the server recreates it
+on the next successful `POST`.
+
+`.env` (your API key) still lives inside this `server/` folder, so it does
+need to be recreated after downloading a fresh copy — seeded from
+`.env.example`, this only takes a moment (see above).
 
 ## Known caveats
 

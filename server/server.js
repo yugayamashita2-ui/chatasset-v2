@@ -6,12 +6,16 @@
 // database, no auth: this only proves each path works end to end.
 const http = require("http");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const PORT = process.env.PORT || 8787;
-const DATA_FILE = path.join(__dirname, "data", "questions.json");
+// Deliberately outside this project folder: re-downloading/re-extracting a
+// new copy of ChatAsset (e.g. to pick up an update) must never orphan
+// previously captured questions. ~/.chatasset survives that.
+const DATA_FILE = path.join(os.homedir(), ".chatasset", "questions.json");
 const INDEX_FILE = path.join(__dirname, "public", "index.html");
 const ENV_FILE = path.join(__dirname, ".env");
 const MAX_BODY_BYTES = 100_000; // a single question should never be this long
@@ -199,6 +203,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[ChatAsset] server listening on http://localhost:${PORT}`);
+  console.log(`[ChatAsset] data file: ${DATA_FILE}`);
   if (!process.env.ANTHROPIC_API_KEY) {
     console.log(
       "[ChatAsset] note: ANTHROPIC_API_KEY is not set — question capture and browsing still work, but the 要約する (summarize) button will fail until it's configured (see server/README.md)."

@@ -141,6 +141,3 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-
-# ChatAsset: captured questions are personal data, never commit them
-server/data/*.json
