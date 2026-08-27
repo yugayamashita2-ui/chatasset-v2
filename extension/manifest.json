@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ChatAsset — ChatGPT Question Capture (MVP)",
-  "version": "0.1.0",
-  "description": "Technical spike: detects questions submitted on ChatGPT's web UI, logs them to the console, and sends them to a local ChatAsset server for storage.",
+  "name": "ChatAsset — Question Capture (MVP)",
+  "version": "0.2.0",
+  "description": "Technical spike: detects questions submitted on ChatGPT's and Claude's web UIs, logs them to the console, and sends them to a local ChatAsset server for storage.",
   "host_permissions": ["http://localhost:8787/*"],
   "content_scripts": [
     {
@@ -11,6 +11,13 @@
         "https://chat.openai.com/*"
       ],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://claude.ai/*"
+      ],
+      "js": ["content-claude.js"],
       "run_at": "document_idle"
     }
   ]
