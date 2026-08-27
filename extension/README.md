@@ -64,3 +64,10 @@ doesn't "submit" anything, so old messages are never re-logged.
   once (two "content script loaded" lines in the console for one page),
   every submission gets logged and sent twice. Remove the duplicate rather
   than debugging around it.
+- IME input (Japanese, Chinese, Korean, ...): confirming a conversion
+  candidate also presses Enter, but it isn't a real submission. Found via
+  manual testing with Japanese input — a single sentence was logged and
+  sent to the server several times, once per conversion-confirm Enter,
+  even though ChatGPT itself only received one message. Fixed by skipping
+  Enter presses where `event.isComposing` is true (Safari fallback:
+  `event.keyCode === 229`).

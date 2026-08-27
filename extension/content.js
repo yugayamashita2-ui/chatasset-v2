@@ -96,6 +96,10 @@
     "keydown",
     (event) => {
       if (event.key !== "Enter" || event.shiftKey) return;
+      // Skip Enter presses used to confirm an IME conversion (e.g. Japanese
+      // kanji candidates) — those aren't a real submission, and treating
+      // them as one logs the sentence over and over as it's being typed.
+      if (event.isComposing || event.keyCode === 229) return;
       if (document.activeElement?.id !== "prompt-textarea") return;
       logQuestion();
     },
