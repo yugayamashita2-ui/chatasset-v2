@@ -2,9 +2,12 @@
   "name": "chatasset-server",
   "version": "0.1.0",
   "private": true,
-  "description": "ChatAsset MVP server: accepts questions captured by the Chrome extension and appends them to a local JSON file. No external dependencies.",
+  "description": "ChatAsset MVP server: accepts questions captured by the Chrome extension, serves a list/search page, and summarizes long questions via the Claude API.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.121.0"
   }
 }

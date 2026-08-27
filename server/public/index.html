@@ -59,6 +59,28 @@
     border-radius: 6px;
   }
   .no-match { color: #888; padding: 24px 0; text-align: center; }
+  .summary { font-weight: 600; line-height: 1.6; margin-bottom: 4px; }
+  .toggle-full {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #2563eb;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .question.collapsed { display: none; }
+  .summarize-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 8px;
+  }
+  .summarize-btn:disabled { opacity: 0.6; cursor: default; }
+  .summarize-error { color: #b91c1c; font-size: 12px; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -72,6 +94,8 @@
 
 <script>
 let allQuestions = [];
+// Below this length, summarizing isn't worth an API call.
+const SUMMARIZE_THRESHOLD = 40;
 
 async function loadQuestions() {
   const listEl = document.getElementById("list");
@@ -95,7 +119,7 @@ function applySearch() {
     return;
   }
   const filtered = allQuestions.filter((q) => {
-    const haystack = `${q.question || ""} ${q.provider || ""}`.toLowerCase();
+    const haystack = `${q.question || ""} ${q.questionSummary || ""} ${q.provider || ""}`.toLowerCase();
     return haystack.includes(query);
   });
   render(filtered, query);
@@ -139,12 +163,42 @@ function render(questions, query) {
     meta.appendChild(provider);
     meta.appendChild(time);
 
+    item.appendChild(meta);
+
     const question = document.createElement("div");
     question.className = "question";
     question.textContent = q.question || "";
 
-    item.appendChild(meta);
-    item.appendChild(question);
+    if (q.questionSummary) {
+      const summary = document.createElement("div");
+      summary.className = "summary";
+      summary.textContent = q.questionSummary;
+      item.appendChild(summary);
+
+      question.classList.add("collapsed");
+
+      const toggle = document.createElement("button");
+      toggle.className = "toggle-full";
+      toggle.type = "button";
+      toggle.textContent = "全文を見る";
+      toggle.addEventListener("click", () => {
+        const collapsed = question.classList.toggle("collapsed");
+        toggle.textContent = collapsed ? "全文を見る" : "閉じる";
+      });
+      item.appendChild(toggle);
+      item.appendChild(question);
+    } else {
+      item.appendChild(question);
+
+      if ((q.question || "").length > SUMMARIZE_THRESHOLD) {
+        const btn = document.createElement("button");
+        btn.className = "summarize-btn";
+        btn.type = "button";
+        btn.textContent = "要約する";
+        btn.addEventListener("click", () => summarize(q.id, btn, item));
+        item.appendChild(btn);
+      }
+    }
 
     if (typeof q.conversationUrl === "string" && /^https?:\/\//i.test(q.conversationUrl)) {
       const linkWrap = document.createElement("div");
@@ -159,6 +213,33 @@ function render(questions, query) {
     }
 
     listEl.appendChild(item);
+  }
+}
+
+async function summarize(id, btn, item) {
+  btn.disabled = true;
+  btn.textContent = "要約中…";
+
+  const existingError = item.querySelector(".summarize-error");
+  if (existingError) existingError.remove();
+
+  try {
+    const res = await fetch(`/api/questions/${encodeURIComponent(id)}/summarize`, {
+      method: "POST",
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+
+    const idx = allQuestions.findIndex((q) => q.id === id);
+    if (idx !== -1) allQuestions[idx] = body;
+    applySearch();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = "要約する";
+    const error = document.createElement("div");
+    error.className = "summarize-error";
+    error.textContent = "要約に失敗しました: " + err.message;
+    item.appendChild(error);
   }
 }
 

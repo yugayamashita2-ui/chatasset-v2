@@ -1,10 +1,42 @@
-# ChatAsset server — Phase 2 + 3 technical spike
+# ChatAsset server — Phase 2 + 3 + 5 technical spike
 
 Goal: confirm the Chrome extension can send a captured question to a server
-and have it saved (Phase 2), and that the saved questions can be browsed in
-a simple list (Phase 3). No database, no auth, no external npm dependencies
-— just Node's built-in `http` module, a JSON file on disk, and a static
-HTML page.
+and have it saved (Phase 2), that the saved questions can be browsed and
+searched in a simple list (Phase 3 + 4), and that a long question can be
+summarized on demand via the Claude API (Phase 5). No database, no auth.
+
+## Setup (one-time)
+
+```
+npm install
+```
+
+This installs the one dependency this phase adds: `@anthropic-ai/sdk`
+(needed only for the "要約する" / summarize button — everything else in
+this project has zero dependencies).
+
+### API key (only needed for the summarize button)
+
+Question capture, browsing, and search all work with **no API key at
+all**. The key is only needed if you click "要約する" on a long question.
+
+1. Go to https://console.anthropic.com/ and sign in (or create an
+   account).
+2. You'll need billing set up (a payment method + a small amount of
+   credit) before an API key can actually be used — this is Anthropic's
+   account, not something ChatAsset sets up.
+3. Go to "API Keys" and create a new key. It starts with `sk-ant-...`.
+4. In this `server/` folder, copy `.env.example` to a new file named
+   `.env`, and paste your key in:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+   `.env` is gitignored — it's never committed.
+
+Summaries use Claude Haiku 4.5, the cheapest current model — a single
+summary costs a small fraction of a cent. Nothing is summarized
+automatically; it only happens when you click the button, so you're always
+in control of when it's used.
 
 ## Run it
 
@@ -24,6 +56,9 @@ You should see:
 [ChatAsset] server listening on http://localhost:8787
 ```
 
+If `ANTHROPIC_API_KEY` isn't set, you'll also see a note that the
+summarize button won't work yet — everything else is unaffected.
+
 Leave it running while you use the Chrome extension. Then open
 http://localhost:8787/ in a browser to see the question list.
 
@@ -32,14 +67,26 @@ http://localhost:8787/ in a browser to see the question list.
 - `POST /api/questions` — body: `{ provider, question, timestamp,
   conversationUrl }`. Requires `provider` and `question` to be non-empty
   strings; the other two are optional. Appends a record (with a generated
-  `id` and `receivedAt`) to `data/questions.json` and returns it.
+  `id`, `questionSummary: null`, and `receivedAt`) to `data/questions.json`
+  and returns it.
 - `GET /api/questions` — returns everything saved so far, as a JSON array.
   Used by the list page below; also handy directly
   (`curl http://localhost:8787/api/questions`).
+- `POST /api/questions/:id/summarize` — calls Claude to generate a short
+  (~20-30 character) Japanese summary of that question's full text, saves
+  it as `questionSummary` on the record, and returns the updated record.
+  The original `question` text is never modified or discarded — the
+  summary is stored alongside it, purely for display/search. Fails with a
+  clear error if `ANTHROPIC_API_KEY` isn't set.
 - `GET /` — serves `public/index.html`, a plain HTML/CSS/JS page (no
-  framework, no build step) that fetches `/api/questions` and renders each
-  question newest-first: provider, date/time, the question text, and a
-  link to the original conversation. Click "更新" to refetch.
+  framework, no build step) with:
+  - the question list, newest-first: provider, date/time, question text,
+    link to the original conversation
+  - a search box that filters by question text, summary, and provider
+    name (client-side, over what's already loaded)
+  - for any question over ~40 characters with no summary yet, a "要約する"
+    button; once summarized, the list shows the summary in bold with a
+    "全文を見る" toggle to expand the original text
 
 ## Data
 
@@ -55,3 +102,9 @@ reset; the server recreates it on the next successful `POST`.
 - No de-duplication server-side. If the extension sends the same question
   twice (e.g. because it's loaded twice — see `../extension/README.md`),
   both get saved as separate records.
+- The summarize prompt explicitly asks Claude to describe what's being
+  asked, not to interpret the asker's intent or state of mind — matching
+  this project's principle of recording facts, not AI-generated
+  interpretation. Still, any model-generated text can occasionally be
+  off; the original question is always shown via "全文を見る" so you can
+  check it.
