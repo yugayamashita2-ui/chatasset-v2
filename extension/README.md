@@ -4,9 +4,9 @@ Goal: confirm that a Chrome extension can detect a question a user submits on
 an AI's web UI, and send it to a local ChatAsset server for storage. No
 capture of the AI's answer, ever.
 
-ChatGPT (`content.js`) is confirmed working through real testing. Claude
-(`content-claude.js`) is a first attempt that **still needs to be verified
-against the real claude.ai page** — see "Claude support: unverified" below.
+Both ChatGPT (`content.js`) and Claude (`content-claude.js`) are confirmed
+working through real testing — see "Claude support" below for what testing
+found and fixed.
 
 ## How it works
 
@@ -46,29 +46,21 @@ page doesn't "submit" anything, so old messages are never re-logged.
    `[ChatAsset] saved to server.`.
 6. Open http://localhost:8787/ — the question should appear in the list.
 
-## Claude support: unverified
+## Claude support
 
-`content-claude.js` follows the exact same strategy as `content.js`, but
-unlike ChatGPT's, none of it has been confirmed against the real page yet:
+`content-claude.js` follows the exact same strategy as `content.js`.
+Unlike ChatGPT's, its selectors (`PROMPT_SELECTORS`, the `aria-label`/
+`data-testid` guesses in `isSendButton`) were written without being able
+to inspect the real claude.ai page first — they turned out to work on the
+first real test (a plain `[contenteditable="true"]` message with English
+"send" in its `aria-label` was enough), but that was confirmed by testing
+on the actual page, not assumed in advance. That same test also surfaced
+the "new conversation URL" issue documented in the caveats below.
 
-- ChatGPT's prompt box has a stable `id="prompt-textarea"` to key off of;
-  Claude's composer doesn't have an equivalent documented anywhere here, so
-  `PROMPT_SELECTORS` is a guess at a few plausible selectors
-  (`.ProseMirror`, a `data-testid`, and a generic
-  `[contenteditable="true"]` fallback).
-- ChatGPT's Enter/click both reliably trigger a native `submit` event on
-  the surrounding `<form>`; it's unknown whether claude.ai's UI dispatches
-  one at all, so the keydown/click listeners may end up doing all the
-  work.
-- The send button detection guesses at `aria-label` containing "send" and
-  a `data-testid` of `send-message-button`; the real attribute is unverified.
-
-Load the extension, open claude.ai, send a message, and check the console
-for a `[ChatAsset]` block — the same way Phase 1 was originally verified
-for ChatGPT (see the git history of this file). If nothing shows up,
-inspecting the actual composer/button elements in DevTools and adjusting
-`PROMPT_SELECTORS` / `isSendButton` in `content-claude.js` is the next
-step, not guessing further.
+If detection ever stops firing (claude.ai's DOM isn't a stable target any
+more than ChatGPT's is), inspecting the actual composer/button elements in
+DevTools and adjusting `PROMPT_SELECTORS` / `isSendButton` in
+`content-claude.js` is the next step, not guessing further.
 
 ## Scope / permissions
 
@@ -98,3 +90,13 @@ step, not guessing further.
   logged and sent to the server several times, once per conversion-confirm
   Enter. Fixed by skipping Enter presses where `event.isComposing` is true
   (Safari fallback: `event.keyCode === 229`); both content scripts do this.
+- A brand-new conversation's URL isn't permanent yet at the instant of the
+  first message — found via manual testing on claude.ai, where the very
+  first message of a new chat recorded `conversationUrl` as
+  `https://claude.ai/new` instead of a real conversation link, because the
+  page hadn't finished routing to the permanent URL yet. Both content
+  scripts now wait 800ms after detecting a submission before reading
+  `location.href` (the question text and timestamp are still captured
+  immediately, at the real moment of submission — only the URL read is
+  delayed). If this still occasionally races on a slow connection, the
+  delay may need to be longer.

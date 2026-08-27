@@ -66,20 +66,28 @@
     lastLoggedText = text;
     lastLoggedAt = now;
 
-    const record = {
-      provider: PROVIDER,
-      question: text,
-      timestamp: new Date(now).toISOString(),
-      conversationUrl: window.location.href,
-    };
+    const timestamp = new Date(now).toISOString();
 
-    console.log("[ChatAsset]");
-    console.log("Provider:", record.provider);
-    console.log("Question:", record.question);
-    console.log("Timestamp:", record.timestamp);
-    console.log("Conversation URL:", record.conversationUrl);
+    // A brand-new conversation's URL doesn't become permanent until the
+    // page finishes routing after this first message — reading it right
+    // away would capture the generic "new chat" URL instead of the real
+    // one. Give it a moment before reading location.href.
+    setTimeout(() => {
+      const record = {
+        provider: PROVIDER,
+        question: text,
+        timestamp,
+        conversationUrl: window.location.href,
+      };
 
-    sendToServer(record);
+      console.log("[ChatAsset]");
+      console.log("Provider:", record.provider);
+      console.log("Question:", record.question);
+      console.log("Timestamp:", record.timestamp);
+      console.log("Conversation URL:", record.conversationUrl);
+
+      sendToServer(record);
+    }, 800);
   }
 
   function isSendButton(target) {
