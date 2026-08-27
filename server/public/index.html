@@ -43,7 +43,6 @@
   a { color: #2563eb; text-decoration: none; }
   a:hover { text-decoration: underline; }
   #refresh {
-    margin-bottom: 16px;
     font-size: 13px;
     padding: 6px 12px;
     cursor: pointer;
@@ -51,15 +50,29 @@
     border-radius: 6px;
     background: #fff;
   }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; }
+  #search {
+    flex: 1;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .no-match { color: #888; padding: 24px 0; text-align: center; }
 </style>
 </head>
 <body>
 <h1>ChatAsset — 質問履歴</h1>
 <div class="subtitle">自分がAIに何を質問してきたかの記録</div>
-<button id="refresh">更新</button>
+<div class="toolbar">
+  <input type="search" id="search" placeholder="質問文・AI名で検索" />
+  <button id="refresh">更新</button>
+</div>
 <div id="list"></div>
 
 <script>
+let allQuestions = [];
+
 async function loadQuestions() {
   const listEl = document.getElementById("list");
   listEl.textContent = "読み込み中...";
@@ -68,10 +81,24 @@ async function loadQuestions() {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const questions = await res.json();
     questions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    render(questions);
+    allQuestions = questions;
+    applySearch();
   } catch (err) {
     listEl.textContent = "読み込みに失敗しました: " + err.message;
   }
+}
+
+function applySearch() {
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  if (!query) {
+    render(allQuestions);
+    return;
+  }
+  const filtered = allQuestions.filter((q) => {
+    const haystack = `${q.question || ""} ${q.provider || ""}`.toLowerCase();
+    return haystack.includes(query);
+  });
+  render(filtered, query);
 }
 
 function formatTimestamp(iso) {
@@ -81,14 +108,16 @@ function formatTimestamp(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function render(questions) {
+function render(questions, query) {
   const listEl = document.getElementById("list");
   listEl.innerHTML = "";
 
   if (questions.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "empty";
-    empty.textContent = "まだ質問が記録されていません。ChatGPTで質問してみてください。";
+    empty.className = query ? "no-match" : "empty";
+    empty.textContent = query
+      ? `「${query}」に一致する質問はありません。`
+      : "まだ質問が記録されていません。ChatGPTで質問してみてください。";
     listEl.appendChild(empty);
     return;
   }
@@ -134,6 +163,7 @@ function render(questions) {
 }
 
 document.getElementById("refresh").addEventListener("click", loadQuestions);
+document.getElementById("search").addEventListener("input", applySearch);
 loadQuestions();
 </script>
 </body>
