@@ -1,0 +1,22 @@
+{
+  "name": "chatasset-v2",
+  "version": "1.0.0",
+  "description": "YouTube動画から日本語のなぞなぞを抽出し、英語学習者向けに英訳するCLIツール",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "extract": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
