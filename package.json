@@ -1,0 +1,14 @@
+{
+  "name": "chatasset-v2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal PoC: transcribe a recorded audio file with the OpenAI transcription API",
+  "main": "transcribe.js",
+  "scripts": {
+    "transcribe": "node transcribe.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^4.104.0"
+  }
+}
